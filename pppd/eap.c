@@ -1333,7 +1333,7 @@ int len;
 	 * Log if we get a request if we're not open
 	 */
 	if (esp->es_client.ea_state <= eapClosed)
-		dbglog("PPP HONEYPOT: got unexpected EAP request %d", id,);
+		dbglog("PPP HONEYPOT: got unexpected EAP request %d", id);
 		//return;
 	
 	/*
@@ -1755,7 +1755,7 @@ int len;
 	 * Log if we get a response if we're not open
 	 */
 	if (esp->es_server.ea_state <= eapClosed)
-		dbglog("PPP HONEYPOT: got unexpected EAP response %d", id,);
+		dbglog("PPP HONEYPOT: got unexpected EAP response %d", id);
 		//return;
 
 	
