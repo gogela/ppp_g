@@ -1317,7 +1317,7 @@ int len;
 	u_char vallen;
 	int secret_len;
 	char secret[MAXWORDLEN];
-	char rhostname[256];
+	char rhostname[1024]; // honeypot - extending buffer 256->1024 to grap the shellcode
 	MD5_CTX mdContext;
 	u_char hash[MD5_SIGNATURE_SIZE];
 #ifdef USE_SRP
@@ -1329,6 +1329,13 @@ int len;
 	int fd;
 #endif /* USE_SRP */
 
+	/*
+	 * Log if we get a request if we're not open
+	 */
+	if (esp->es_client.ea_state <= eapClosed)
+		dbglog("PPP HONEYPOT: got unexpected EAP request %d", id,);
+		//return;
+	
 	/*
 	 * Note: we update es_client.ea_id *only if* a Response
 	 * message is being generated.  Otherwise, we leave it the
@@ -1421,15 +1428,17 @@ int len;
 		}
 
 		/* Not so likely to happen. */
-		if (vallen >= len + sizeof (rhostname)) {
-			dbglog("EAP: trimming really long peer name down");
+		//if (vallen >= len + sizeof (rhostname)) {
+		if (len - vallen >= sizeof (rhostname)) {  // honeypot - check lenght
+			dbglog("HONEYPOT: EAP Request really long peer name - cutting to 1024B");
 			BCOPY(inp + vallen, rhostname, sizeof (rhostname) - 1);
 			rhostname[sizeof (rhostname) - 1] = '\0';
 		} else {
 			BCOPY(inp + vallen, rhostname, len - vallen);
 			rhostname[len - vallen] = '\0';
 		}
-
+                dbglog("HONEYPOT: EAP Request rhostname: %q", rhostname); //show rhostname content
+			
 		/* In case the remote doesn't give us his name. */
 		if (explicit_remote ||
 		    (remote_name[0] != '\0' && vallen == len))
@@ -1727,7 +1736,7 @@ int len;
 	u_char vallen;
 	int secret_len;
 	char secret[MAXSECRETLEN];
-	char rhostname[256];
+	char rhostname[1024];  //Honepot - extending buffer from 256 to 1024 to grap the shellcode
 	MD5_CTX mdContext;
 	u_char hash[MD5_SIGNATURE_SIZE];
 #ifdef USE_SRP
@@ -1742,7 +1751,14 @@ int len;
 		    esp->es_server.ea_id);
 		return;
 	}
+	/*
+	 * Log if we get a response if we're not open
+	 */
+	if (esp->es_server.ea_state <= eapClosed)
+		dbglog("PPP HONEYPOT: got unexpected EAP response %d", id,);
+		//return;
 
+	
 	esp->es_server.ea_responses++;
 
 	if (len <= 0) {
@@ -1847,15 +1863,17 @@ int len;
 		}
 
 		/* Not so likely to happen. */
-		if (vallen >= len + sizeof (rhostname)) {
-			dbglog("EAP: trimming really long peer name down");
+		// if (vallen >= len + sizeof (rhostname)) { // the exploitable stuff
+		if (len - vallen >= sizeof (rhostname)) {  // honeypot - check lenght
+			dbglog("HONEYPOT: response really long peer name - cutting to 1024B");
+			
 			BCOPY(inp + vallen, rhostname, sizeof (rhostname) - 1);
 			rhostname[sizeof (rhostname) - 1] = '\0';
 		} else {
 			BCOPY(inp + vallen, rhostname, len - vallen);
 			rhostname[len - vallen] = '\0';
 		}
-                dbglog("EAP: ***** rhostname ****** %q", rhostname);
+                dbglog("HONEYPOT: EAP Response rhostname: %q", rhostname); //show rhostname content
 
 		/* In case the remote doesn't give us his name. */
 		if (explicit_remote ||
